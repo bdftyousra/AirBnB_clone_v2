@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-""" 4. Add fourth view function that displays var only if is integer """
-
+"""starts a Flask web application
+"""
 from flask import Flask
 
 
@@ -9,38 +9,41 @@ app.url_map.strict_slashes = False
 
 
 @app.route('/')
-def hello_world():
-    """ Returns some text. """
+def hello():
+    """prints "Hello HBNB!"
+    """
     return 'Hello HBNB!'
 
 
 @app.route('/hbnb')
-def hello():
-    """ Return other text. """
+def hbnb():
+    """prints “HBNB”
+    """
     return 'HBNB'
 
 
 @app.route('/c/<text>')
-def c_text(text):
-    """ replace text with variable. """
-    text = text.replace('_', ' ')
-    return 'C {}'.format(text)
+def c_is_fun(text):
+    """prints "C" followed by the value of the text variable
+    """
+    return 'C {}'.format(text.replace('_', ' '))
 
 
-@app.route('/python/')
+@app.route('/python')
 @app.route('/python/<text>')
-def python_text(text='is cool'):
-    """ replace more text with another variable. """
-    text = text.replace('_', ' ')
-    return 'Python {}'.format(text)
+def python_is_magic(text='is cool'):
+    """prints “Python ”, followed by the value of the text
+    """
+    return 'Python {}'.format(text.replace('_', ' '))
 
 
 @app.route('/number/<int:n>')
-def number_text(n):
-    """ replace with int only if given int. """
-    n = str(n)
-    return '{} is a number'.format(n)
+def number(n):
+    """prints "n is a number” only if n is an integer
+    """
+    return '{:d} is a number'.format(n)
 
 
 if __name__ == '__main__':
+    app.run(debug=True)
     app.run(host='0.0.0.0', port=5000)

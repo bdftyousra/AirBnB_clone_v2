@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """This is the file storage class for AirBnB"""
 import json
-import sys
 from models.base_model import BaseModel
 from models.user import User
 from models.state import State
@@ -20,25 +19,28 @@ class FileStorage:
     """
     __file_path = "file.json"
     __objects = {}
+    all_classes = {'BaseModel': BaseModel, 'User': User,
+                   'State': State, 'City': City, 'Amenity': Amenity,
+                   'Place': Place, 'Review': Review}
 
     def all(self, cls=None):
         """returns a dictionary
         Return:
             returns a dictionary of __object
         """
-        if cls is None:
-            return self.__objects
-        else:
-            new_dict = {}
-            if len(self.__objects) > 0:
-                for key, value in self.__objects.items():
-                    if type(cls) is str:
-                        if cls == key.split('.')[0]:
-                            new_dict[key] = value
-                    else:
-                        if cls is type(value):
-                            new_dict[key] = value
-            return new_dict
+        all_return = {}
+
+        # if cls is valid
+        if cls:
+            if cls.__name__ in self.all_classes:
+                # copy objects of cls to temp dict
+                for key, val in self.__objects.items():
+                    if key.split('.')[0] == cls.__name__:
+                        all_return.update({key: val})
+        else:  # if cls is none
+            all_return = self.__objects
+
+        return all_return
 
     def new(self, obj):
         """sets __object to given obj
@@ -69,18 +71,15 @@ class FileStorage:
         except FileNotFoundError:
             pass
 
-    def delete(self, obj=None):
-        """Deletes obj from __objecs if its inside
-        Not sure if it should also delete from json file
-        """
-
-        dict_key = ""
-        for key, value in self.__objects.items():
-            if obj == value:
-                dict_key = key
-        if dict_key is not "":
-            del self.__objects[dict_key]
-
     def close(self):
-        """ calls reload() for deserializing the JSON file to objects."""
-        self.reload()
+        """Reload JSON objects
+        """
+        return self.reload()
+
+    def delete(self, obj=None):
+        """delete obj from __objects if present
+        """
+        if obj:
+            # format key from obj
+            key = "{}.{}".format(type(obj).__name__, obj.id)
+            del self.__objects[key]

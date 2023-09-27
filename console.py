@@ -1,10 +1,6 @@
 #!/usr/bin/python3
 """This is the console for AirBnB"""
 import cmd
-import shlex
-import json
-import re
-from ast import literal_eval
 from models import storage
 from datetime import datetime
 from models.base_model import BaseModel
@@ -22,8 +18,8 @@ class HBNBCommand(cmd.Cmd):
     """
     prompt = "(hbnb) "
     all_classes = {"BaseModel": BaseModel, "User": User, "State": State,
-                   "City": City, "Amenity": Amenity, "Place": Place,
-                   "Review": Review}
+                   "City": City, "Amenity": Amenity,
+                   "Place": Place, "Review": Review}
 
     def emptyline(self):
         """Ignores empty spaces"""
@@ -41,74 +37,35 @@ class HBNBCommand(cmd.Cmd):
         """Creates a new instance of BaseModel, saves it
         Exceptions:
             SyntaxError: when there is no args given
-            NameError: when there is no object that has the name
+            NameError: when there is no object taht has the name
         """
         try:
             if not line:
                 raise SyntaxError()
-            # my_list = line.split(" ")
-            # if len(my_list) > 1:
-            #     cls = my_list.pop(0)
-            #     obj = eval("{}({})".format(cls, temp3))
-            # else:
-            #     obj = eval("{}()".format(my_list[0]))
+            my_list = line.split(" ")  # split cmd line into list
 
-            # parser = shlex.shlex(line, posix=True)
-            # parser.whitespace_split = True
-            # token = " "
-            # arg_list = []
-            # tok_list = []
-            # cls = parser.get_token()
-            # while token is not None:
-            #     token = parser.get_token()
-            #     tok_list.append(token)
-            # del tok_list[-1]
-            # print(tok_list)
-            # for arg in tok_list:
-            #     arg_list.append(arg.split('=')[0])
-            # for arg in tok_list:
-            #     arg_list.append(arg.split('=')[1])
-            #     temp = literal_eval(arg_list[0])
+            if my_list:  # if list not empty
+                cls_name = my_list[0]  # extract class name
+            else:  # class name missing
+                raise SyntaxError()
 
-            parser = shlex.shlex(line, posix=True)
-            parser.whitespace_split = True
-            token = " "
-            tok_list = []
-            tup_list = []
-            to_parse = {}
-            sanitized_args = {}
-            cls = parser.get_token()
-            while token is not None:
-                token = parser.get_token()
-                tok_list.append(token)
-            for tup in tok_list:
-                if tup is not None:
-                    tup_list.append(tup.partition('='))
-            for tuple_item in tup_list:
-                to_parse[tuple_item[0]] = tuple_item[2]
-            for k, v in to_parse.items():
+            kwargs = {}
 
-                # Matches string beginnig with 1 or more alphanum
-                # followed and ended by _id
-                if re.match("^\w+_id$", k):
-                    sanitized_args[k] = v
-
-                # Matches string that could be starting with + or -,
-                # followed by 1 to any amount of numbers
-                # followed by  a '.'
-                # followed by and anding with 1 to any amount of numbers
-                elif re.match("^[-+]?\d+\.\d+$", v):
-                    sanitized_args[k] = float(v)
-                elif v.isdigit() is True:
-                    sanitized_args[k] = int(v)
+            for pair in my_list[1:]:
+                k, v = pair.split("=")
+                if self.is_int(v):
+                    kwargs[k] = int(v)
+                elif self.is_float(v):
+                    kwargs[k] = float(v)
                 else:
-                    if '_' in v:
-                        sanitized_args[k] = v.replace('_', ' ')
-                    else:
-                        sanitized_args[k] = v
-            obj = HBNBCommand.all_classes[cls](**sanitized_args)
-            obj.save()
-            print("{}".format(obj.id))
+                    v = v.replace('_', ' ')
+                    kwargs[k] = v.strip('"\'')
+
+            obj = self.all_classes[cls_name](**kwargs)
+            storage.new(obj)  # store new object
+            obj.save()  # save storage to file
+            print(obj.id)  # print id of created object class
+
         except SyntaxError:
             print("** class name missing **")
         except KeyError:
@@ -164,7 +121,8 @@ class HBNBCommand(cmd.Cmd):
             objects = storage.all()
             key = my_list[0] + '.' + my_list[1]
             if key in objects:
-                del objects[key]
+                # del objects[key]
+                storage.delete(objects[key])
                 storage.save()
             else:
                 raise KeyError()
@@ -182,10 +140,9 @@ class HBNBCommand(cmd.Cmd):
         Exceptions:
             NameError: when there is no object taht has the name
         """
-
+        objects = storage.all()
         my_list = []
         if not line:
-            objects = storage.all()
             for key in objects:
                 my_list.append(objects[key])
             print(my_list)
@@ -194,9 +151,10 @@ class HBNBCommand(cmd.Cmd):
             args = line.split(" ")
             if args[0] not in self.all_classes:
                 raise NameError()
-            objects = storage.all(args[0])
-            for value in objects.values():
-                my_list.append(value)
+            for key in objects:
+                name = key.split('.')
+                if name[0] == args[0]:
+                    my_list.append(objects[key])
             print(my_list)
         except NameError:
             print("** class doesn't exist **")
@@ -311,6 +269,23 @@ class HBNBCommand(cmd.Cmd):
                     self.do_update(args)
         else:
             cmd.Cmd.default(self, line)
+
+    @staticmethod
+    def is_int(n):
+        """ checks if integer"""
+        try:
+            int(n)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def is_float(n):
+        try:
+            float(n)
+            return True
+        except ValueError:
+            return False
 
 
 if __name__ == '__main__':
